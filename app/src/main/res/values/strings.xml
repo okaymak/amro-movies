@@ -1,0 +1,7 @@
+<resources xmlns:tools="http://schemas.android.com/tools" tools:locale="en">
+    <string name="app_name">AMRO Movies</string>
+
+    <string name="title_trending_movies">Trending Movies</string>
+    <string name="action_sort_movies">Sort Movies</string>
+    <string name="action_filter_movies">Filter Movies</string>
+</resources>
