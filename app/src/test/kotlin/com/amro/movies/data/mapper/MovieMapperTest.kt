@@ -3,6 +3,7 @@ package com.amro.movies.data.mapper
 import com.amro.movies.data.remote.tmdb.model.TmdbMovieDto
 import com.amro.movies.domain.model.MovieId
 import com.amro.movies.domain.model.MovieProvider
+import kotlinx.datetime.LocalDate
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -16,7 +17,9 @@ class MovieMapperTest {
             title = "Test Movie",
             overview = "Test Overview",
             posterPath = "/path.jpg",
-            genreIds = listOf(1, 2)
+            genreIds = listOf(1, 2),
+            releaseDate = LocalDate(2023, 5, 20),
+            popularity = 75.5
         )
         val imageBaseUrl = "https://image.tmdb.org/t/p/w500"
         val genreMap = mapOf(1 to "Action", 2 to "Comedy")
@@ -34,6 +37,8 @@ class MovieMapperTest {
         assertEquals(2, domain.genres.size)
         assertEquals("Action", domain.genres[0].name)
         assertEquals("Comedy", domain.genres[1].name)
+        assertEquals(LocalDate(2023, 5, 20), domain.releaseDate)
+        assertEquals(75.5, domain.popularity, 0.0)
     }
 
     @Test
@@ -44,7 +49,9 @@ class MovieMapperTest {
             title = "Unknown Genre Movie",
             overview = "Overview",
             posterPath = "/path.jpg",
-            genreIds = listOf(99)
+            genreIds = listOf(99),
+            releaseDate = null,
+            popularity = 10.0
         )
         val genreMap = mapOf(1 to "Action")
 
@@ -53,5 +60,7 @@ class MovieMapperTest {
 
         // Then
         assertEquals("Unknown", domain.genres[0].name)
+        assertEquals(null, domain.releaseDate)
+        assertEquals(10.0, domain.popularity, 0.0)
     }
 }
