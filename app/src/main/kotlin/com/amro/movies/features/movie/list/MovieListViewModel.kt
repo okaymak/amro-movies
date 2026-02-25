@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.amro.movies.domain.model.SortDirection
 import com.amro.movies.domain.model.SortField
+import com.amro.movies.domain.usecase.FilterMoviesUseCase
 import com.amro.movies.domain.usecase.GetTrendingMoviesUseCase
 import com.amro.movies.domain.usecase.SortMoviesUseCase
 import dev.zacsweers.metro.AppScope
@@ -38,13 +39,14 @@ import kotlinx.coroutines.launch
 @ViewModelKey(MovieListViewModel::class)
 class MovieListViewModel(
     private val getTrendingMoviesUseCase: GetTrendingMoviesUseCase,
-    private val sortMoviesUseCase: SortMoviesUseCase
+    private val sortMoviesUseCase: SortMoviesUseCase,
+    private val filterMoviesUseCase: FilterMoviesUseCase
 ) : ViewModel() {
     /**
      * A trigger used to re-fetch movies from the remote source.
      */
     private val refreshTrigger = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
-    
+
     /**
      * The current active field for sorting (e.g., Popularity, Title).
      */
@@ -54,6 +56,11 @@ class MovieListViewModel(
      * The current active direction for sorting (Ascending/Descending).
      */
     private val sortDirection = MutableStateFlow(SortDirection.DESCENDING)
+
+    /**
+     * The current set of selected genre IDs for filtering.
+     */
+    private val selectedGenres = MutableStateFlow(emptySet<Int>())
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private val trendingMovies = refreshTrigger
@@ -75,17 +82,19 @@ class MovieListViewModel(
     val state: StateFlow<MovieListUiState> = combine(
         trendingMovies,
         sortField,
-        sortDirection
-    ) { result, field, direction ->
+        sortDirection,
+        selectedGenres
+    ) { result, field, direction, genres ->
         result.fold(
             onSuccess = { movies ->
-                val sortedMovies = sortMoviesUseCase(
-                    movies = movies,
-                    sortField = field,
-                    sortDirection = direction
-                )
+                val availableGenres = movies.flatMap { it.genres }.distinctBy { it.id }
+                val filteredMovies = filterMoviesUseCase(movies, genres)
+                val sortedMovies = sortMoviesUseCase(filteredMovies, field, direction)
+
                 MovieListUiState.Success(
                     movies = sortedMovies,
+                    availableGenres = availableGenres,
+                    selectedGenres = genres,
                     currentSortField = field,
                     currentSortDirection = direction
                 )
@@ -95,12 +104,12 @@ class MovieListViewModel(
             }
         )
     }
-    .onStart { emit(MovieListUiState.Loading) }
-    .stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.Lazily,
-        initialValue = MovieListUiState.Loading
-    )
+        .onStart { emit(MovieListUiState.Loading) }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.Lazily,
+            initialValue = MovieListUiState.Loading
+        )
 
     /**
      * Triggers a refresh of the movie list.
@@ -129,5 +138,16 @@ class MovieListViewModel(
      */
     fun onSortDirectionSelected(direction: SortDirection) {
         sortDirection.value = direction
+    }
+
+    /**
+     * Toggles the selection of a genre for filtering.
+     */
+    fun onGenreSelected(genreId: Int) {
+        selectedGenres.value = if (genreId in selectedGenres.value) {
+            selectedGenres.value - genreId
+        } else {
+            selectedGenres.value + genreId
+        }
     }
 }

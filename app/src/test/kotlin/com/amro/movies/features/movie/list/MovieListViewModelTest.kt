@@ -1,10 +1,12 @@
 package com.amro.movies.features.movie.list
 
+import com.amro.movies.domain.model.Genre
 import com.amro.movies.domain.model.Movie
 import com.amro.movies.domain.model.MovieId
 import com.amro.movies.domain.model.SortDirection
 import com.amro.movies.domain.model.SortField
 import com.amro.movies.domain.repository.MovieRepository
+import com.amro.movies.domain.usecase.FilterMoviesUseCase
 import com.amro.movies.domain.usecase.GetTrendingMoviesUseCase
 import com.amro.movies.domain.usecase.SortMoviesUseCase
 import kotlinx.coroutines.Dispatchers
@@ -32,6 +34,7 @@ class MovieListViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
     private val sortMoviesUseCase = SortMoviesUseCase()
+    private val filterMoviesUseCase = FilterMoviesUseCase()
 
     @Before
     fun setup() {
@@ -46,7 +49,8 @@ class MovieListViewModelTest {
     private fun createViewModel(repository: MovieRepository): MovieListViewModel {
         return MovieListViewModel(
             getTrendingMoviesUseCase = GetTrendingMoviesUseCase(repository),
-            sortMoviesUseCase = sortMoviesUseCase
+            sortMoviesUseCase = sortMoviesUseCase,
+            filterMoviesUseCase = filterMoviesUseCase
         )
     }
 
@@ -116,6 +120,40 @@ class MovieListViewModelTest {
         assertEquals("Movie B", successState.movies[1].title)
         assertEquals(SortField.TITLE, successState.currentSortField)
         assertEquals(SortDirection.ASCENDING, successState.currentSortDirection)
+        job.cancel()
+    }
+
+    @Test
+    fun `selecting a genre should filter movies`() = runTest {
+        val actionGenre = Genre(1, "Action")
+        val comedyGenre = Genre(2, "Comedy")
+        val movies = listOf(
+            Movie(MovieId.tmdb(1), "Action Movie", "", "", listOf(actionGenre), LocalDate(2023, 1, 1), 10.0),
+            Movie(MovieId.tmdb(2), "Comedy Movie", "", "", listOf(comedyGenre), LocalDate(2023, 1, 1), 20.0)
+        )
+        val repository = object : MovieRepository {
+            override fun getTrendingMovies(): Flow<List<Movie>> = flowOf(movies)
+        }
+        val viewModel = createViewModel(repository)
+
+        // Start collecting to trigger the lazy StateFlow
+        val job = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.state.collect {}
+        }
+        
+        advanceUntilIdle()
+
+        // Initially both movies are present
+        assertEquals(2, (viewModel.state.value as MovieListUiState.Success).movies.size)
+
+        // Select "Action" genre (ID: 1)
+        viewModel.onGenreSelected(1)
+        advanceUntilIdle()
+
+        val successState = viewModel.state.value as MovieListUiState.Success
+        assertEquals(1, successState.movies.size)
+        assertEquals("Action Movie", successState.movies[0].title)
+        assertTrue(1 in successState.selectedGenres)
         job.cancel()
     }
 

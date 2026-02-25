@@ -1,5 +1,6 @@
 package com.amro.movies.features.movie.list
 
+import com.amro.movies.domain.model.Genre
 import com.amro.movies.domain.model.Movie
 import com.amro.movies.domain.model.SortDirection
 import com.amro.movies.domain.model.SortField
@@ -16,12 +17,16 @@ sealed interface MovieListUiState {
     /**
      * The movie list was successfully loaded.
      *
-     * @property movies The sorted list of movies to display.
-     * @property currentSortField The field currently used for sorting.
+     * @property movies The filtered and sorted list of movies to display.
+     * @property availableGenres The list of all unique genres available for filtering.
+     * @property selectedGenres The IDs of the currently selected genres for filtering.
+     * @property currentSortField The field by which the movies are currently sorted.
      * @property currentSortDirection The direction of the current sort.
      */
     data class Success(
         val movies: List<Movie>,
+        val availableGenres: List<Genre>,
+        val selectedGenres: Set<Int>,
         val currentSortField: SortField,
         val currentSortDirection: SortDirection
     ) : MovieListUiState
