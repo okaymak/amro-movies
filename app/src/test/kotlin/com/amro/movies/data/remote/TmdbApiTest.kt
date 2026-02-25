@@ -11,8 +11,10 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.LocalDate
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class TmdbApiTest {
@@ -31,7 +33,9 @@ class TmdbApiTest {
                                 "title": "Movie 1",
                                 "overview": "Overview 1",
                                 "poster_path": "/path1.jpg",
-                                "genre_ids": [12, 18]
+                                "genre_ids": [12, 18],
+                                "release_date": "2023-05-20",
+                                "popularity": 123.4
                             }
                         ],
                         "total_pages": 1,
@@ -57,6 +61,61 @@ class TmdbApiTest {
         assertEquals(1, result.size)
         assertEquals(1, result[0].id)
         assertEquals("Movie 1", result[0].title)
+        assertEquals(LocalDate(2023, 5, 20), result[0].releaseDate)
+        assertEquals(123.4, result[0].popularity, 0.0)
+    }
+
+    @Test
+    fun `getTrendingMovies should handle null or empty release_date`() = runTest {
+        // Given
+        val mockEngine = MockEngine { request ->
+            respond(
+                content = """
+                    {
+                        "page": 1,
+                        "results": [
+                            {
+                                "id": 1,
+                                "title": "No Date Movie",
+                                "overview": "",
+                                "poster_path": "",
+                                "genre_ids": [],
+                                "release_date": "",
+                                "popularity": 0.0
+                            },
+                            {
+                                "id": 2,
+                                "title": "Null Date Movie",
+                                "overview": "",
+                                "poster_path": "",
+                                "genre_ids": [],
+                                "release_date": null,
+                                "popularity": 0.0
+                            }
+                        ],
+                        "total_pages": 1,
+                        "total_results": 2
+                    }
+                """.trimIndent(),
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            )
+        }
+
+        val client = HttpClient(mockEngine) {
+            install(ContentNegotiation) {
+                json(Json { ignoreUnknownKeys = true })
+            }
+        }
+        val api = TmdbApi(client)
+
+        // When
+        val result = api.getTrendingMovies(1)
+
+        // Then
+        assertEquals(2, result.size)
+        assertNull(result[0].releaseDate)
+        assertNull(result[1].releaseDate)
     }
 
     @Test

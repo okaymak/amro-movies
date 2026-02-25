@@ -1,5 +1,7 @@
 package com.amro.movies.domain.model
 
+import kotlinx.datetime.LocalDate
+
 /**
  * A domain-level representation of a movie.
  *
@@ -11,11 +13,15 @@ package com.amro.movies.domain.model
  * @property overview A brief summary or description of the movie.
  * @property posterUrl The full URL to the movie's poster image.
  * @property genres The list of genres associated with this movie.
+ * @property releaseDate The release date of the movie.
+ * @property popularity The popularity score of the movie.
  */
 data class Movie(
     val id: MovieId,
     val title: String,
     val overview: String,
     val posterUrl: String,
-    val genres: List<Genre>
+    val genres: List<Genre>,
+    val releaseDate: LocalDate?,
+    val popularity: Double
 )

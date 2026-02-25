@@ -22,5 +22,7 @@ fun TmdbMovieDto.toDomain(
     posterUrl = "${imageBaseUrl}${posterPath}",
     genres = genreIds.map { id ->
         Genre(id = id, name = genreMap[id] ?: "Unknown")
-    }
+    },
+    releaseDate = this.releaseDate,
+    popularity = this.popularity
 )

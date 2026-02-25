@@ -82,7 +82,7 @@ class TmdbMovieRepositoryTest {
                 requestedPages.add(page)
                 
                 val results = (1..20).joinToString(",") { i ->
-                    """{ "id": ${page * 100 + i}, "title": "Movie ${page * 100 + i}", "overview": "", "poster_path": "", "genre_ids": [] }"""
+                    """{ "id": ${page * 100 + i}, "title": "Movie ${page * 100 + i}", "overview": "", "poster_path": "", "genre_ids": [], "release_date": "2023-01-01", "popularity": 10.0 }"""
                 }
 
                 respond(
@@ -115,6 +115,8 @@ class TmdbMovieRepositoryTest {
         // Assert
         assertEquals(100, movies.size)
         assertEquals(listOf(1, 2, 3, 4, 5), requestedPages.sorted())
+        assertEquals(10.0, movies[0].popularity, 0.0)
+        assertEquals("2023-01-01", movies[0].releaseDate.toString())
     }
 
     @Test(expected = Exception::class)
@@ -135,7 +137,9 @@ class TmdbMovieRepositoryTest {
         }
 
         val client = HttpClient(mockEngine) {
-            install(ContentNegotiation) { json() }
+            install(ContentNegotiation) {
+                json(Json { ignoreUnknownKeys = true })
+            }
         }
         val repository = TmdbMovieRepository(TmdbApi(client), TmdbConfig())
 
@@ -161,7 +165,9 @@ class TmdbMovieRepositoryTest {
         }
 
         val client = HttpClient(mockEngine) {
-            install(ContentNegotiation) { json() }
+            install(ContentNegotiation) {
+                json(Json { ignoreUnknownKeys = true })
+            }
         }
         val repository = TmdbMovieRepository(TmdbApi(client), TmdbConfig())
 

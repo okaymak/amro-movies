@@ -12,7 +12,6 @@ import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.cache.HttpCache
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
-import io.ktor.client.plugins.logging.DEFAULT
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
@@ -50,7 +49,7 @@ object NetworkBindings {
                             Log.d("KtorClient", message)
                         }
                     }
-                    level = LogLevel.ALL
+                    level = LogLevel.INFO
                 }
             }
         }

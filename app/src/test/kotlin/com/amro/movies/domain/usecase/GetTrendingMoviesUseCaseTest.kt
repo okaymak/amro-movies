@@ -6,6 +6,7 @@ import com.amro.movies.domain.repository.MovieRepository
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.LocalDate
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -20,7 +21,9 @@ class GetTrendingMoviesUseCaseTest {
                 title = "Movie 1",
                 overview = "Overview 1",
                 posterUrl = "url1",
-                genres = emptyList()
+                genres = emptyList(),
+                releaseDate = LocalDate(2023, 1, 1),
+                popularity = 100.0
             )
         )
         val repository = object : MovieRepository {

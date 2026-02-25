@@ -2,8 +2,11 @@ package com.amro.movies.features.movie.list
 
 import com.amro.movies.domain.model.Movie
 import com.amro.movies.domain.model.MovieId
+import com.amro.movies.domain.model.SortDirection
+import com.amro.movies.domain.model.SortField
 import com.amro.movies.domain.repository.MovieRepository
 import com.amro.movies.domain.usecase.GetTrendingMoviesUseCase
+import com.amro.movies.domain.usecase.SortMoviesUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -16,6 +19,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.datetime.LocalDate
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -27,6 +31,7 @@ import java.util.concurrent.atomic.AtomicInteger
 class MovieListViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
+    private val sortMoviesUseCase = SortMoviesUseCase()
 
     @Before
     fun setup() {
@@ -38,27 +43,33 @@ class MovieListViewModelTest {
         Dispatchers.resetMain()
     }
 
+    private fun createViewModel(repository: MovieRepository): MovieListViewModel {
+        return MovieListViewModel(
+            getTrendingMoviesUseCase = GetTrendingMoviesUseCase(repository),
+            sortMoviesUseCase = sortMoviesUseCase
+        )
+    }
+
     @Test
     fun `initial state should be Loading`() = runTest {
         val repository = object : MovieRepository {
             override fun getTrendingMovies(): Flow<List<Movie>> = flowOf(emptyList())
         }
-        val useCase = GetTrendingMoviesUseCase(repository)
-        val viewModel = MovieListViewModel(useCase)
+        val viewModel = createViewModel(repository)
 
         assertEquals(MovieListUiState.Loading, viewModel.state.value)
     }
 
     @Test
-    fun `state should transition to Success when movies are fetched`() = runTest {
+    fun `state should transition to Success with default sorting when movies are fetched`() = runTest {
         val movies = listOf(
-            Movie(MovieId.tmdb(1), "Movie 1", "Overview 1", "url1", emptyList())
+            Movie(MovieId.tmdb(1), "Movie B", "", "", emptyList(), LocalDate(2023, 1, 1), 10.0),
+            Movie(MovieId.tmdb(2), "Movie A", "", "", emptyList(), LocalDate(2023, 1, 1), 20.0)
         )
         val repository = object : MovieRepository {
             override fun getTrendingMovies(): Flow<List<Movie>> = flowOf(movies)
         }
-        val useCase = GetTrendingMoviesUseCase(repository)
-        val viewModel = MovieListViewModel(useCase)
+        val viewModel = createViewModel(repository)
 
         // Start collecting to trigger the lazy StateFlow
         val job = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
@@ -68,7 +79,43 @@ class MovieListViewModelTest {
         advanceUntilIdle()
 
         assertTrue(viewModel.state.value is MovieListUiState.Success)
-        assertEquals(movies, (viewModel.state.value as MovieListUiState.Success).movies)
+        val successState = viewModel.state.value as MovieListUiState.Success
+        // Default is popularity descending, so Movie A (20.0) should be first
+        assertEquals("Movie A", successState.movies[0].title)
+        assertEquals("Movie B", successState.movies[1].title)
+        assertEquals(SortField.POPULARITY, successState.currentSortField)
+        assertEquals(SortDirection.DESCENDING, successState.currentSortDirection)
+        job.cancel()
+    }
+
+    @Test
+    fun `changing sort field should update state`() = runTest {
+        val movies = listOf(
+            Movie(MovieId.tmdb(1), "Movie B", "", "", emptyList(), LocalDate(2023, 1, 1), 10.0),
+            Movie(MovieId.tmdb(2), "Movie A", "", "", emptyList(), LocalDate(2023, 1, 1), 20.0)
+        )
+        val repository = object : MovieRepository {
+            override fun getTrendingMovies(): Flow<List<Movie>> = flowOf(movies)
+        }
+        val viewModel = createViewModel(repository)
+
+        // Start collecting to trigger the lazy StateFlow
+        val job = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.state.collect {}
+        }
+        
+        advanceUntilIdle()
+
+        // Change to Title Ascending
+        viewModel.onSortFieldSelected(SortField.TITLE)
+        viewModel.onSortDirectionSelected(SortDirection.ASCENDING)
+        advanceUntilIdle()
+
+        val successState = viewModel.state.value as MovieListUiState.Success
+        assertEquals("Movie A", successState.movies[0].title)
+        assertEquals("Movie B", successState.movies[1].title)
+        assertEquals(SortField.TITLE, successState.currentSortField)
+        assertEquals(SortDirection.ASCENDING, successState.currentSortDirection)
         job.cancel()
     }
 
@@ -78,8 +125,7 @@ class MovieListViewModelTest {
         val repository = object : MovieRepository {
             override fun getTrendingMovies(): Flow<List<Movie>> = flow { throw Exception(errorMessage) }
         }
-        val useCase = GetTrendingMoviesUseCase(repository)
-        val viewModel = MovieListViewModel(useCase)
+        val viewModel = createViewModel(repository)
 
         // Start collecting to trigger the lazy StateFlow
         val job = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
@@ -102,8 +148,7 @@ class MovieListViewModelTest {
                 emit(emptyList())
             }
         }
-        val useCase = GetTrendingMoviesUseCase(repository)
-        val viewModel = MovieListViewModel(useCase)
+        val viewModel = createViewModel(repository)
 
         // Start collecting to trigger the lazy StateFlow
         val job = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {

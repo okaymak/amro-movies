@@ -74,6 +74,7 @@ dependencies {
     implementation(libs.androidx.navigation3.lifecycle)
     implementation(libs.androidx.navigation3.material3.adaptive)
     implementation(libs.kotlinx.serialization.core)
+    implementation(libs.kotlinx.datetime)
 
     implementation(libs.kotlinx.coroutines.android)
 
