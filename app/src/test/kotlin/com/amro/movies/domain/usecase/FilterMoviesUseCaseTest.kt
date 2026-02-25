@@ -40,15 +40,21 @@ class FilterMoviesUseCaseTest {
     }
 
     @Test
-    fun `when genreId matches, should return matching movies`() {
+    fun `when single genreId matches, should return matching movies`() {
         val result = filterMoviesUseCase(movies, setOf(1))
         assertEquals(listOf(movie1), result)
     }
 
     @Test
-    fun `when multiple genreIds match, should return movies matching at least one`() {
+    fun `when multiple genreIds match, should only return movies matching ALL genres`() {
+        val result = filterMoviesUseCase(movies, setOf(1, 2))
+        assertEquals(listOf(movie1), result)
+    }
+
+    @Test
+    fun `when multiple genreIds result in no intersection, should return empty list`() {
         val result = filterMoviesUseCase(movies, setOf(1, 3))
-        assertEquals(listOf(movie1, movie2), result)
+        assertEquals(emptyList<Movie>(), result)
     }
 
     @Test

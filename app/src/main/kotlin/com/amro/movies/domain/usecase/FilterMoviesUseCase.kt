@@ -13,7 +13,7 @@ class FilterMoviesUseCase {
      * Filters the given list of movies.
      *
      * If [genreIds] is empty, the original list is returned. Otherwise, only movies
-     * that contain at least one of the specified genre IDs are returned.
+     * that contain ALL of the specified genre IDs are returned.
      *
      * @param movies The list of movies to filter.
      * @param genreIds The IDs of the genres to filter by.
@@ -23,7 +23,8 @@ class FilterMoviesUseCase {
         if (genreIds.isEmpty()) return movies
 
         return movies.filter { movie ->
-            movie.genres.any { genre -> genre.id in genreIds }
+            val movieGenreIds = movie.genres.map { it.id }
+            genreIds.all { selectedId -> selectedId in movieGenreIds }
         }
     }
 }

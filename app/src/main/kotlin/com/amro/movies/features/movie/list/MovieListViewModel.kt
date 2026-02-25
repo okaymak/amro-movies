@@ -11,6 +11,8 @@ import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
+import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.toImmutableSet
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,6 +22,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -28,11 +31,8 @@ import kotlinx.coroutines.launch
  * ViewModel for the Movie List screen.
  *
  * This ViewModel manages the trending movies data by reactively combining the remote
- * data source with in-memory sorting preferences. It exposes a single [state] flow
+ * data source with in-memory sorting and filtering preferences. It exposes a single [state] flow
  * that represents the current UI state.
- *
- * Uses [GetTrendingMoviesUseCase] for data fetching and [SortMoviesUseCase] for
- * applying sorting logic.
  */
 @Inject
 @ContributesIntoMap(AppScope::class)
@@ -46,6 +46,11 @@ class MovieListViewModel(
      * A trigger used to re-fetch movies from the remote source.
      */
     private val refreshTrigger = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+
+    /**
+     * Whether the list is currently being refreshed.
+     */
+    private val isRefreshing = MutableStateFlow(false)
 
     /**
      * The current active field for sorting (e.g., Popularity, Title).
@@ -70,21 +75,23 @@ class MovieListViewModel(
                 .map { Result.success(it) }
                 .catch { emit(Result.failure(it)) }
         }
+        .onEach { isRefreshing.value = false }
 
     /**
      * The current state of the Movie List UI.
      *
-     * This flow combines the latest trending movies result with the current [sortField]
-     * and [sortDirection]. Whenever the movies are refreshed or sorting preferences
-     * change, the state is re-emitted with the newly sorted list.
+     * This flow combines the latest trending movies result with the current sorting
+     * and filtering preferences. Whenever the movies are refreshed, sorted, or
+     * filtered, the state is re-emitted.
      */
     @OptIn(ExperimentalCoroutinesApi::class)
     val state: StateFlow<MovieListUiState> = combine(
         trendingMovies,
         sortField,
         sortDirection,
-        selectedGenres
-    ) { result, field, direction, genres ->
+        selectedGenres,
+        isRefreshing
+    ) { result, field, direction, genres, refreshing ->
         result.fold(
             onSuccess = { movies ->
                 val availableGenres = movies.flatMap { it.genres }.distinctBy { it.id }
@@ -92,11 +99,12 @@ class MovieListViewModel(
                 val sortedMovies = sortMoviesUseCase(filteredMovies, field, direction)
 
                 MovieListUiState.Success(
-                    movies = sortedMovies,
-                    availableGenres = availableGenres,
-                    selectedGenres = genres,
+                    movies = sortedMovies.toImmutableList(),
+                    availableGenres = availableGenres.toImmutableList(),
+                    selectedGenres = genres.toImmutableSet(),
                     currentSortField = field,
-                    currentSortDirection = direction
+                    currentSortDirection = direction,
+                    isRefreshing = refreshing
                 )
             },
             onFailure = {
@@ -116,15 +124,13 @@ class MovieListViewModel(
      */
     fun onRefresh() {
         viewModelScope.launch {
+            isRefreshing.value = true
             refreshTrigger.emit(Unit)
         }
     }
 
     /**
-     * Updates the field used for sorting the movie list.
-     *
-     * Changing the field will cause the [state] to re-sort the current list of movies
-     * and emit a new [MovieListUiState.Success].
+     * Updates the field used for sorting.
      */
     fun onSortFieldSelected(field: SortField) {
         sortField.value = field
@@ -132,9 +138,6 @@ class MovieListViewModel(
 
     /**
      * Updates the direction of the sort.
-     *
-     * Changing the direction will cause the [state] to re-sort the current list of movies
-     * and emit a new [MovieListUiState.Success].
      */
     fun onSortDirectionSelected(direction: SortDirection) {
         sortDirection.value = direction
@@ -149,5 +152,12 @@ class MovieListViewModel(
         } else {
             selectedGenres.value + genreId
         }
+    }
+
+    /**
+     * Clears all active genre filters.
+     */
+    fun onClearFilters() {
+        selectedGenres.value = emptySet()
     }
 }
