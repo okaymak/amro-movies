@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -21,6 +23,18 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        val tokenKey = "TMDB_BEARER_TOKEN"
+        val token = System.getenv(tokenKey) ?: run {
+            Properties().apply {
+                rootProject
+                    .file("local.properties")
+                    .reader()
+                    .use(::load)
+            }.getProperty(tokenKey) ?: ""
+        }
+
+        buildConfigField("String", tokenKey, "\"$token\"")
     }
 
     buildTypes {
@@ -33,14 +47,14 @@ android {
         }
     }
 
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
-    }
-
     buildFeatures {
+        buildConfig = true
         compose = true
     }
+}
+
+kotlin {
+    jvmToolchain(17)
 }
 
 dependencies {
@@ -61,7 +75,20 @@ dependencies {
     implementation(libs.androidx.navigation3.material3.adaptive)
     implementation(libs.kotlinx.serialization.core)
 
+    implementation(libs.kotlinx.coroutines.android)
+
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.okhttp)
+    implementation(libs.ktor.client.content)
+    implementation(libs.ktor.serialization.json)
+    implementation(libs.ktor.client.logging)
+
+    implementation(libs.coil.compose)
+    implementation(libs.coil.network.ktor)
+
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.ktor.client.mock)
 
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

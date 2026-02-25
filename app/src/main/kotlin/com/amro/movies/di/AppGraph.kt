@@ -1,6 +1,8 @@
 package com.amro.movies.di
 
 import android.app.Application
+import com.amro.movies.di.bindings.NetworkBindings
+import com.amro.movies.di.bindings.RepositoryBindings
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.DependencyGraph
 import dev.zacsweers.metro.Provides
@@ -17,9 +19,12 @@ import dev.zacsweers.metrox.viewmodel.ViewModelGraph
  */
 @DependencyGraph(
     scope = AppScope::class,
-    bindingContainers = []
+    bindingContainers = [
+        NetworkBindings::class,
+        RepositoryBindings::class
+    ]
 )
-interface AppGraph: MetroAppComponentProviders, ViewModelGraph {
+interface AppGraph : MetroAppComponentProviders, ViewModelGraph {
     @DependencyGraph.Factory
     fun interface Factory {
         fun create(@Provides application: Application): AppGraph
