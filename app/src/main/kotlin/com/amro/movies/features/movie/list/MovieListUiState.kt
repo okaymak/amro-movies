@@ -4,6 +4,8 @@ import com.amro.movies.domain.model.Genre
 import com.amro.movies.domain.model.Movie
 import com.amro.movies.domain.model.SortDirection
 import com.amro.movies.domain.model.SortField
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableSet
 
 /**
  * Represents the different states for the Movie List screen.
@@ -22,13 +24,15 @@ sealed interface MovieListUiState {
      * @property selectedGenres The IDs of the currently selected genres for filtering.
      * @property currentSortField The field by which the movies are currently sorted.
      * @property currentSortDirection The direction of the current sort.
+     * @property isRefreshing Whether the list is currently being refreshed.
      */
     data class Success(
-        val movies: List<Movie>,
-        val availableGenres: List<Genre>,
-        val selectedGenres: Set<Int>,
+        val movies: ImmutableList<Movie>,
+        val availableGenres: ImmutableList<Genre>,
+        val selectedGenres: ImmutableSet<Int>,
         val currentSortField: SortField,
-        val currentSortDirection: SortDirection
+        val currentSortDirection: SortDirection,
+        val isRefreshing: Boolean = false
     ) : MovieListUiState
 
     /**

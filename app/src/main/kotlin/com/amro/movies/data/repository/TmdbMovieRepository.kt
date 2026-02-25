@@ -53,7 +53,7 @@ class TmdbMovieRepository(
      * and merges them into a single list. It also ensures that genres are cached
      * before mapping the movie DTOs to domain models.
      *
-     * @return A [Flow] emitting a list of 100 [Movie] domain models.
+     * @return A [Flow] emitting a list of 100 unique [Movie] domain models.
      */
     override fun getTrendingMovies(): Flow<List<Movie>> =
         flow {
@@ -71,7 +71,9 @@ class TmdbMovieRepository(
                                 )
                             }
                     }
-                }.awaitAll().flatten()
+                }.awaitAll()
+                    .flatten()
+                    .distinctBy { it.id }
             }
             emit(movies)
         }

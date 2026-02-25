@@ -77,6 +77,7 @@ dependencies {
     implementation(libs.kotlinx.datetime)
 
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.collections.immutable)
 
     implementation(libs.ktor.client.core)
     implementation(libs.ktor.client.okhttp)

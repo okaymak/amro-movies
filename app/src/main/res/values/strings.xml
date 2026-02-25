@@ -1,7 +1,27 @@
 <resources xmlns:tools="http://schemas.android.com/tools" tools:locale="en">
     <string name="app_name">AMRO Movies</string>
 
+    <!-- Toolbar  -->
     <string name="title_trending_movies">Trending Movies</string>
     <string name="action_sort_movies">Sort Movies</string>
     <string name="action_filter_movies">Filter Movies</string>
+
+    <!-- Sort Options -->
+    <string name="sort_title">Sort by</string>
+    <string name="sort_field_popularity">Popularity</string>
+    <string name="sort_field_title">Title</string>
+    <string name="sort_field_release_date">Release Date</string>
+
+    <string name="sort_direction_title">Direction</string>
+    <string name="sort_direction_ascending">Ascending</string>
+    <string name="sort_direction_descending">Descending</string>
+
+    <!-- Filter Options -->
+    <string name="filter_title">Filter by Genres</string>
+    <string name="action_clear_filters">Clear filter</string>
+    <string name="filter_empty_state">No movies found matching the selected filters.</string>
+
+    <!-- Error States -->
+    <string name="error_loading_movies">Failed to load movies.</string>
+    <string name="action_retry">Retry</string>
 </resources>

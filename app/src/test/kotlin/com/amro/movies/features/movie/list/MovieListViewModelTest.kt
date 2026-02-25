@@ -158,6 +158,40 @@ class MovieListViewModelTest {
     }
 
     @Test
+    fun `clearing filters should restore all movies`() = runTest {
+        val actionGenre = Genre(1, "Action")
+        val movies = listOf(
+            Movie(MovieId.tmdb(1), "Action Movie", "", "", listOf(actionGenre), LocalDate(2023, 1, 1), 10.0),
+            Movie(MovieId.tmdb(2), "Other Movie", "", "", emptyList(), LocalDate(2023, 1, 1), 20.0)
+        )
+        val repository = object : MovieRepository {
+            override fun getTrendingMovies(): Flow<List<Movie>> = flowOf(movies)
+        }
+        val viewModel = createViewModel(repository)
+
+        // Start collecting
+        val job = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.state.collect {}
+        }
+        
+        advanceUntilIdle()
+
+        // Apply filter
+        viewModel.onGenreSelected(1)
+        advanceUntilIdle()
+        assertEquals(1, (viewModel.state.value as MovieListUiState.Success).movies.size)
+
+        // Clear filter
+        viewModel.onClearFilters()
+        advanceUntilIdle()
+
+        val successState = viewModel.state.value as MovieListUiState.Success
+        assertEquals(2, successState.movies.size)
+        assertTrue(successState.selectedGenres.isEmpty())
+        job.cancel()
+    }
+
+    @Test
     fun `state should transition to Error when fetch fails`() = runTest {
         val errorMessage = "Network Error"
         val repository = object : MovieRepository {
