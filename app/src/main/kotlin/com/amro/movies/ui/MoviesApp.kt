@@ -55,6 +55,9 @@ fun MoviesApp(modifier: Modifier = Modifier) {
                             sharedTransitionScope = this@SharedTransitionLayout,
                             animatedVisibilityScope = LocalNavAnimatedContentScope.current,
                             onMovieClick = { movie ->
+                                if (backStack.lastOrNull() is Route.MovieDetail) {
+                                    backStack.removeAt(backStack.size - 1)
+                                }
                                 backStack.add(Route.MovieDetail(movie.id.value))
                             }
                         )
