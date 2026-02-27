@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -193,6 +194,11 @@ class MovieListScreenTest {
         // Click sort icon in top bar
         composeTestRule.onNodeWithContentDescription("Sort Movies").performClick()
 
+        // Wait for the bottom sheet to be displayed
+        composeTestRule.waitUntil(timeoutMillis = 5000) {
+            composeTestRule.onAllNodes(hasText("Sort by")).fetchSemanticsNodes().isNotEmpty()
+        }
+
         // Verify bottom sheet title is displayed
         composeTestRule.onNodeWithText("Sort by").assertIsDisplayed()
         composeTestRule.onNodeWithText("Popularity").assertIsDisplayed()
@@ -231,6 +237,12 @@ class MovieListScreenTest {
         }
 
         composeTestRule.onNodeWithContentDescription("Sort Movies").performClick()
+
+        // Wait for the bottom sheet to be displayed
+        composeTestRule.waitUntil(timeoutMillis = 5000) {
+            composeTestRule.onAllNodes(hasText("Sort by")).fetchSemanticsNodes().isNotEmpty()
+        }
+
         composeTestRule.onNodeWithText("Title").performClick()
 
         assert(selectedField.get() == SortField.TITLE)
@@ -268,6 +280,11 @@ class MovieListScreenTest {
 
         // Click filter icon in top bar
         composeTestRule.onNodeWithContentDescription("Filter Movies").performClick()
+
+        // Wait for the bottom sheet to be displayed to avoid IdlingResourceTimeoutException
+        composeTestRule.waitUntil(timeoutMillis = 5000) {
+            composeTestRule.onAllNodes(hasText("Filter by Genres")).fetchSemanticsNodes().isNotEmpty()
+        }
 
         // Verify bottom sheet title and genres are displayed
         composeTestRule.onNodeWithText("Filter by Genres").assertIsDisplayed()
@@ -308,6 +325,12 @@ class MovieListScreenTest {
         }
 
         composeTestRule.onNodeWithContentDescription("Filter Movies").performClick()
+
+        // Wait for the bottom sheet to be displayed
+        composeTestRule.waitUntil(timeoutMillis = 5000) {
+            composeTestRule.onAllNodes(hasText("Filter by Genres")).fetchSemanticsNodes().isNotEmpty()
+        }
+
         composeTestRule.onNodeWithText("Action").performClick()
 
         assert(selectedGenreId.get() == 1)
@@ -345,6 +368,12 @@ class MovieListScreenTest {
         }
 
         composeTestRule.onNodeWithContentDescription("Filter Movies").performClick()
+
+        // Wait for the bottom sheet to be displayed
+        composeTestRule.waitUntil(timeoutMillis = 5000) {
+            composeTestRule.onAllNodes(hasText("Filter by Genres")).fetchSemanticsNodes().isNotEmpty()
+        }
+
         composeTestRule.onNodeWithText("Clear filter", substring = true).performClick()
 
         assert(clearFiltersCalled.get())

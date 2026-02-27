@@ -1,5 +1,6 @@
 package com.amro.movies.features.movie.detail
 
+import app.cash.turbine.test
 import com.amro.movies.domain.model.Movie
 import com.amro.movies.domain.model.MovieDetails
 import com.amro.movies.domain.model.MovieId
@@ -10,17 +11,13 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlinx.datetime.LocalDate
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import kotlin.time.Duration.Companion.minutes
@@ -56,7 +53,10 @@ class MovieDetailViewModelTest {
         }
         val viewModel = createViewModel(repository)
 
-        assertEquals(MovieDetailUiState.Loading, viewModel.state.value)
+        viewModel.state.test {
+            assertEquals(MovieDetailUiState.Loading, awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 
     @Test
@@ -90,17 +90,11 @@ class MovieDetailViewModelTest {
         }
         val viewModel = createViewModel(repository)
 
-        // Start collecting to trigger the lazy StateFlow
-        val job = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-            viewModel.state.collect {}
+        viewModel.state.test {
+            assertEquals(MovieDetailUiState.Loading, awaitItem())
+            val successState = awaitItem() as MovieDetailUiState.Success
+            assertEquals(details, successState.details)
         }
-        
-        advanceUntilIdle()
-
-        assertTrue(viewModel.state.value is MovieDetailUiState.Success)
-        val successState = viewModel.state.value as MovieDetailUiState.Success
-        assertEquals(details, successState.details)
-        job.cancel()
     }
 
     @Test
@@ -114,15 +108,10 @@ class MovieDetailViewModelTest {
         }
         val viewModel = createViewModel(repository)
 
-        // Start collecting to trigger the lazy StateFlow
-        val job = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-            viewModel.state.collect {}
+        viewModel.state.test {
+            assertEquals(MovieDetailUiState.Loading, awaitItem())
+            val errorState = awaitItem() as MovieDetailUiState.Error
+            assertEquals(errorMessage, errorState.message)
         }
-
-        advanceUntilIdle()
-
-        assertTrue(viewModel.state.value is MovieDetailUiState.Error)
-        assertEquals(errorMessage, (viewModel.state.value as MovieDetailUiState.Error).message)
-        job.cancel()
     }
 }
