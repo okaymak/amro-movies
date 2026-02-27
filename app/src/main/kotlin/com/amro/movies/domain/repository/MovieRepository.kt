@@ -1,6 +1,8 @@
 package com.amro.movies.domain.repository
 
 import com.amro.movies.domain.model.Movie
+import com.amro.movies.domain.model.MovieDetails
+import com.amro.movies.domain.model.MovieId
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -16,4 +18,12 @@ interface MovieRepository {
      * @return A flow that emits a list of [Movie] domain objects.
      */
     fun getTrendingMovies(): Flow<List<Movie>>
+
+    /**
+     * Retrieves detailed information for a specific movie.
+     *
+     * @param movieId The unique identifier for the movie.
+     * @return A flow that emits the [MovieDetails] domain object.
+     */
+    fun getMovieDetails(movieId: MovieId): Flow<MovieDetails>
 }

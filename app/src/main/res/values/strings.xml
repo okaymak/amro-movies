@@ -5,6 +5,7 @@
     <string name="title_trending_movies">Trending Movies</string>
     <string name="action_sort_movies">Sort Movies</string>
     <string name="action_filter_movies">Filter Movies</string>
+    <string name="action_back">Back</string>
 
     <!-- Sort Options -->
     <string name="sort_title">Sort by</string>
@@ -24,4 +25,15 @@
     <!-- Error States -->
     <string name="error_loading_movies">Failed to load movies.</string>
     <string name="action_retry">Retry</string>
+
+    <!-- Movie Details -->
+    <string name="movie_details_release_date">(%1$d)</string>
+    <string name="movie_details_rating_format">%1$.1f</string>
+    <string name="movie_details_budget_revenue_format">$%1$,d</string>
+    <string name="movie_details_budget_label">Budget</string>
+    <string name="movie_details_revenue_label">Revenue</string>
+    <string name="movie_details_popularity_label">Popularity</string>
+    <string name="movie_details_popularity_format">%1$.1f</string>
+    <string name="movie_details_view_on_imdb">View on IMDB</string>
+    <string name="movie_details_not_available">N/A</string>
 </resources>
