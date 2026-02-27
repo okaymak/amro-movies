@@ -2,6 +2,7 @@ package com.amro.movies.features.movie.list
 
 import com.amro.movies.domain.model.Genre
 import com.amro.movies.domain.model.Movie
+import com.amro.movies.domain.model.MovieDetails
 import com.amro.movies.domain.model.MovieId
 import com.amro.movies.domain.model.SortDirection
 import com.amro.movies.domain.model.SortField
@@ -58,6 +59,7 @@ class MovieListViewModelTest {
     fun `initial state should be Loading`() = runTest {
         val repository = object : MovieRepository {
             override fun getTrendingMovies(): Flow<List<Movie>> = flowOf(emptyList())
+            override fun getMovieDetails(movieId: MovieId): Flow<MovieDetails> = flowOf()
         }
         val viewModel = createViewModel(repository)
 
@@ -72,6 +74,7 @@ class MovieListViewModelTest {
         )
         val repository = object : MovieRepository {
             override fun getTrendingMovies(): Flow<List<Movie>> = flowOf(movies)
+            override fun getMovieDetails(movieId: MovieId): Flow<MovieDetails> = flowOf()
         }
         val viewModel = createViewModel(repository)
 
@@ -100,6 +103,7 @@ class MovieListViewModelTest {
         )
         val repository = object : MovieRepository {
             override fun getTrendingMovies(): Flow<List<Movie>> = flowOf(movies)
+            override fun getMovieDetails(movieId: MovieId): Flow<MovieDetails> = flowOf()
         }
         val viewModel = createViewModel(repository)
 
@@ -133,6 +137,7 @@ class MovieListViewModelTest {
         )
         val repository = object : MovieRepository {
             override fun getTrendingMovies(): Flow<List<Movie>> = flowOf(movies)
+            override fun getMovieDetails(movieId: MovieId): Flow<MovieDetails> = flowOf()
         }
         val viewModel = createViewModel(repository)
 
@@ -166,6 +171,7 @@ class MovieListViewModelTest {
         )
         val repository = object : MovieRepository {
             override fun getTrendingMovies(): Flow<List<Movie>> = flowOf(movies)
+            override fun getMovieDetails(movieId: MovieId): Flow<MovieDetails> = flowOf()
         }
         val viewModel = createViewModel(repository)
 
@@ -196,6 +202,7 @@ class MovieListViewModelTest {
         val errorMessage = "Network Error"
         val repository = object : MovieRepository {
             override fun getTrendingMovies(): Flow<List<Movie>> = flow { throw Exception(errorMessage) }
+            override fun getMovieDetails(movieId: MovieId): Flow<MovieDetails> = flowOf()
         }
         val viewModel = createViewModel(repository)
 
@@ -219,6 +226,7 @@ class MovieListViewModelTest {
                 fetchCount.incrementAndGet()
                 emit(emptyList())
             }
+            override fun getMovieDetails(movieId: MovieId): Flow<MovieDetails> = flowOf()
         }
         val viewModel = createViewModel(repository)
 

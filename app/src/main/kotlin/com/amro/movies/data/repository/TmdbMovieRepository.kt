@@ -4,6 +4,8 @@ import com.amro.movies.data.mapper.toDomain
 import com.amro.movies.data.remote.tmdb.TmdbApi
 import com.amro.movies.di.config.TmdbConfig
 import com.amro.movies.domain.model.Movie
+import com.amro.movies.domain.model.MovieDetails
+import com.amro.movies.domain.model.MovieId
 import com.amro.movies.domain.repository.MovieRepository
 import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.async
@@ -77,4 +79,16 @@ class TmdbMovieRepository(
             }
             emit(movies)
         }
+
+    override fun getMovieDetails(movieId: MovieId): Flow<MovieDetails> = flow {
+        val tmdbId = movieId.rawId.toIntOrNull()
+            ?: throw IllegalArgumentException("Invalid TMDB ID: ${movieId.value}")
+
+        val movieDetails = api.getMovieDetails(tmdbId)
+            .toDomain(
+                imageBaseUrl = config.imageBaseUrl,
+                imdbBaseUrl = config.imdbBaseUrl
+            )
+        emit(movieDetails)
+    }
 }

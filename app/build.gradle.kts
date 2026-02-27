@@ -15,6 +15,21 @@ android {
         }
     }
 
+    signingConfigs {
+        create("release") {
+            val props = Properties()
+            val file = rootProject.file("local.properties")
+            if (file.exists()) {
+                file.reader().use(props::load)
+            }
+            
+            storeFile = file(props.getProperty("signing.storeFile") ?: "release.keystore")
+            storePassword = props.getProperty("signing.storePassword") ?: ""
+            keyAlias = props.getProperty("signing.keyAlias") ?: ""
+            keyPassword = props.getProperty("signing.keyPassword") ?: ""
+        }
+    }
+
     defaultConfig {
         applicationId = "com.amro.movies"
         minSdk = 30
@@ -39,7 +54,9 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -59,6 +76,7 @@ kotlin {
 
 dependencies {
     implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.browser)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)

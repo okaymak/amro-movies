@@ -2,6 +2,7 @@ package com.amro.movies.data.repository
 
 import com.amro.movies.data.remote.tmdb.TmdbApi
 import com.amro.movies.di.config.TmdbConfig
+import com.amro.movies.domain.model.MovieId
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -173,5 +174,55 @@ class TmdbMovieRepositoryTest {
 
         // Act: This should throw an exception because genre fetch fails
         repository.getTrendingMovies().first()
+    }
+
+    @Test
+    fun `getMovieDetails should fetch and map details correctly`() = runTest {
+        // Given
+        val tmdbId = 123
+        val mockEngine = MockEngine { request ->
+            if (request.url.encodedPath.contains("movie/$tmdbId")) {
+                respond(
+                    content = """
+                        {
+                            "id": $tmdbId,
+                            "title": "Test Movie",
+                            "tagline": "Test Tagline",
+                            "overview": "Test Overview",
+                            "poster_path": "/poster.jpg",
+                            "genres": [{"id": 1, "name": "Action"}],
+                            "release_date": "2023-05-20",
+                            "popularity": 80.0,
+                            "vote_average": 8.5,
+                            "vote_count": 100,
+                            "budget": 1000,
+                            "revenue": 5000,
+                            "status": "Released",
+                            "imdb_id": "tt123",
+                            "runtime": 120
+                        }
+                    """.trimIndent(),
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                )
+            } else {
+                respond(content = "Not Found", status = HttpStatusCode.NotFound)
+            }
+        }
+
+        val client = HttpClient(mockEngine) {
+            install(ContentNegotiation) {
+                json(Json { ignoreUnknownKeys = true })
+            }
+        }
+        val repository = TmdbMovieRepository(TmdbApi(client), TmdbConfig())
+
+        // When
+        val details = repository.getMovieDetails(MovieId.tmdb(tmdbId)).first()
+
+        // Then
+        assertEquals("Test Movie", details.movie.title)
+        assertEquals("Test Tagline", details.tagline)
+        assertEquals("tt123", details.imdbUrl?.substringAfterLast("/"))
     }
 }

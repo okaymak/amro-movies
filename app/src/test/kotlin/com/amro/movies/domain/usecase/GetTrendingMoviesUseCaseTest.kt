@@ -1,8 +1,10 @@
 package com.amro.movies.domain.usecase
 
 import com.amro.movies.domain.model.Movie
+import com.amro.movies.domain.model.MovieDetails
 import com.amro.movies.domain.model.MovieId
 import com.amro.movies.domain.repository.MovieRepository
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
@@ -28,6 +30,7 @@ class GetTrendingMoviesUseCaseTest {
         )
         val repository = object : MovieRepository {
             override fun getTrendingMovies() = flowOf(movies)
+            override fun getMovieDetails(movieId: MovieId): Flow<MovieDetails> = flowOf()
         }
         val useCase = GetTrendingMoviesUseCase(repository)
 
