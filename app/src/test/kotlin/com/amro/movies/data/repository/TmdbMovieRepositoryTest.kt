@@ -19,8 +19,18 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Instant
+
+class FakeClock(var currentInstant: Instant) : Clock {
+    override fun now(): Instant = currentInstant
+}
 
 class TmdbMovieRepositoryTest {
 
@@ -225,4 +235,47 @@ class TmdbMovieRepositoryTest {
         assertEquals("Test Tagline", details.tagline)
         assertEquals("tt123", details.imdbUrl?.substringAfterLast("/"))
     }
+
+    @Test
+    fun `isTrendingMoviesStale should return true initially and after TTL expires`() = runTest {
+        val mockEngine = MockEngine { request ->
+            if (request.url.encodedPath.contains("genre/movie/list")) {
+                respond(
+                    content = """{"genres": []}""",
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                )
+            } else {
+                respond(
+                    content = """{"page": 1, "results": [], "total_pages": 1, "total_results": 0}""",
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                )
+            }
+        }
+        val api = TmdbApi(HttpClient(mockEngine) {
+            install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
+        })
+        val fakeClock = FakeClock(Instant.fromEpochMilliseconds(1000000))
+        val config = TmdbConfig(trendingMoviesTtl = 5.minutes) // Custom TTL for test
+        val repository = TmdbMovieRepository(api, config, fakeClock)
+
+        // Initially stale (lastFetched is 0)
+        assertTrue(repository.isTrendingMoviesStale())
+
+        // Fetch movies
+        repository.getTrendingMovies().first()
+
+        // Not stale immediately after fetch
+        assertFalse(repository.isTrendingMoviesStale())
+
+        // Advance clock by 4 minutes 59 seconds (TTL is 5 minutes)
+        fakeClock.currentInstant += (4.minutes + 59.seconds)
+        assertFalse(repository.isTrendingMoviesStale())
+
+        // Advance clock by 1 more second (TTL reached)
+        fakeClock.currentInstant += 1.seconds
+        assertTrue(repository.isTrendingMoviesStale())
+    }
+
 }

@@ -215,13 +215,75 @@ class MovieListViewModelTest {
 
             // Trigger refresh
             viewModel.onRefresh()
-            
+
             // onRefresh triggers isRefreshing=true, which might emit a new state before the actual fetch completes
             val refreshingState = awaitItem() as MovieListUiState.Success
             assertTrue(refreshingState.isRefreshing)
-            
+
             awaitItem() // Success after refresh
             assertEquals(2, fetchCount.get())
+        }
+    }
+
+    @Test
+    fun `refreshIfStale should trigger refresh when stale and state is Success`() = runTest {
+        val fetchCount = AtomicInteger(0)
+        var isStale = true
+        val repository = object : MovieRepository {
+            override fun getTrendingMovies(): Flow<List<Movie>> = flow {
+                fetchCount.incrementAndGet()
+                emit(emptyList())
+            }
+            override fun isTrendingMoviesStale(): Boolean = isStale
+            override fun getMovieDetails(movieId: MovieId): Flow<MovieDetails> = flowOf()
+        }
+        val viewModel = createViewModel(repository)
+
+        viewModel.state.test {
+            assertEquals(MovieListUiState.Loading, awaitItem())
+            awaitItem() // Initial Success from onStart
+            assertEquals(1, fetchCount.get())
+
+            // Act: Call refreshIfStale when stale
+            viewModel.refreshIfStale()
+
+            // Should trigger refresh
+            assertTrue((awaitItem() as MovieListUiState.Success).isRefreshing)
+            awaitItem() // Success after refresh
+            assertEquals(2, fetchCount.get())
+
+            // Act: Call refreshIfStale when NOT stale
+            isStale = false
+            viewModel.refreshIfStale()
+
+            // Should NOT trigger refresh (no new state emissions)
+            expectNoEvents()
+            assertEquals(2, fetchCount.get())
+        }
+    }
+
+    @Test
+    fun `initial load should hit the repository exactly once`() = runTest {
+        val fetchCount = AtomicInteger(0)
+        val repository = object : MovieRepository {
+            override fun getTrendingMovies(): Flow<List<Movie>> = flow {
+                fetchCount.incrementAndGet()
+                emit(emptyList())
+            }
+            override fun getMovieDetails(movieId: MovieId): Flow<MovieDetails> = flowOf()
+        }
+        val viewModel = createViewModel(repository)
+
+        viewModel.state.test {
+            assertEquals(MovieListUiState.Loading, awaitItem())
+            assertTrue(awaitItem() is MovieListUiState.Success)
+
+            // The refreshTrigger.onStart { emit(Unit) } ensures exactly one fetch
+            assertEquals(1, fetchCount.get())
+
+            // Wait for any potential double-fire
+            expectNoEvents()
+            assertEquals(1, fetchCount.get())
         }
     }
 }

@@ -24,7 +24,7 @@ interface MovieRepository {
      *
      * @return True if the data is stale or missing, false otherwise.
      */
-    fun isTrendingMoviesStale(): Boolean
+    fun isTrendingMoviesStale(): Boolean = false
 
     /**
      * Retrieves detailed information for a specific movie.

@@ -16,7 +16,6 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlin.time.Clock
-import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 
 /**
@@ -28,16 +27,13 @@ import kotlin.time.Instant
 @Inject
 class TmdbMovieRepository(
     private val api: TmdbApi,
-    private val config: TmdbConfig
+    private val config: TmdbConfig,
+    private val clock: Clock = Clock.System
 ) : MovieRepository {
     private val genreCache = mutableMapOf<Int, String>()
     private val genreMutex = Mutex()
 
     private var lastFetched: Instant = Instant.fromEpochMilliseconds(0)
-
-    companion object {
-        private val TTL = 10.minutes
-    }
 
     /**
      * Fetches and caches the genre map from the TMDB API.
@@ -86,13 +82,13 @@ class TmdbMovieRepository(
                     .distinctBy { it.id }
             }
             
-            lastFetched = Clock.System.now()
+            lastFetched = clock.now()
             emit(movies)
         }
 
     override fun isTrendingMoviesStale(): Boolean {
         // Checking if the elapsed time since lastFetched is greater than or equal to TTL
-        return (Clock.System.now() - lastFetched) >= TTL
+        return (clock.now() - lastFetched) >= config.trendingMoviesTtl
     }
 
     override fun getMovieDetails(movieId: MovieId): Flow<MovieDetails> = flow {
