@@ -20,6 +20,13 @@ interface MovieRepository {
     fun getTrendingMovies(): Flow<List<Movie>>
 
     /**
+     * Checks if the currently cached trending movies are considered stale.
+     *
+     * @return True if the data is stale or missing, false otherwise.
+     */
+    fun isTrendingMoviesStale(): Boolean
+
+    /**
      * Retrieves detailed information for a specific movie.
      *
      * @param movieId The unique identifier for the movie.

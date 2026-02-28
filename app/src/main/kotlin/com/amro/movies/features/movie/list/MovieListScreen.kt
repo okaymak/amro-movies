@@ -56,6 +56,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.window.core.layout.WindowSizeClass
 import coil3.compose.AsyncImage
@@ -91,6 +92,14 @@ fun MovieListScreen(
     viewModel: MovieListViewModel = metroViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+
+    val isReady = state is MovieListUiState.Success
+    LifecycleResumeEffect(isReady) {
+        if (isReady) {
+            viewModel.refreshIfStale()
+        }
+        onPauseOrDispose { }
+    }
 
     MovieListScreenContent(
         state = state,

@@ -21,4 +21,11 @@ class GetTrendingMoviesUseCase(
      * @return A flow that emits a list of trending [Movie] objects.
      */
     operator fun invoke(): Flow<List<Movie>> = repository.getTrendingMovies()
+
+    /**
+     * Checks if the trending movies data is stale.
+     *
+     * @return True if data is stale, false otherwise.
+     */
+    fun isStale(): Boolean = repository.isTrendingMoviesStale()
 }

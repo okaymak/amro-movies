@@ -130,6 +130,20 @@ class MovieListViewModel(
     }
 
     /**
+     * Refreshes the movie list only if the data is considered stale and a fetch is not already in progress.
+     * We only refresh if the current state is Success; we do not auto-refresh on Error or Loading.
+     */
+    fun refreshIfStale() {
+        val currentState = state.value
+        if (currentState is MovieListUiState.Success &&
+            !isRefreshing.value &&
+            getTrendingMoviesUseCase.isStale()
+        ) {
+            onRefresh()
+        }
+    }
+
+    /**
      * Updates the field used for sorting.
      */
     fun onSortFieldSelected(field: SortField) {

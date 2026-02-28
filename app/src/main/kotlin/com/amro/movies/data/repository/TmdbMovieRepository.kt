@@ -15,6 +15,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Instant
 
 /**
  * An implementation of [MovieRepository] that fetches data from the TMDB API.
@@ -29,6 +32,12 @@ class TmdbMovieRepository(
 ) : MovieRepository {
     private val genreCache = mutableMapOf<Int, String>()
     private val genreMutex = Mutex()
+
+    private var lastFetched: Instant = Instant.fromEpochMilliseconds(0)
+
+    companion object {
+        private val TTL = 10.minutes
+    }
 
     /**
      * Fetches and caches the genre map from the TMDB API.
@@ -51,9 +60,8 @@ class TmdbMovieRepository(
     /**
      * Fetches the top 100 trending movies from the TMDB API.
      *
-     * This method fetches 5 pages of trending movies concurrently (20 items per page)
-     * and merges them into a single list. It also ensures that genres are cached
-     * before mapping the movie DTOs to domain models.
+     * This method always fetches fresh data from the network and updates the [lastFetched] 
+     * timestamp upon success. Caching is handled at the UI layer via StateFlow.
      *
      * @return A [Flow] emitting a list of 100 unique [Movie] domain models.
      */
@@ -77,8 +85,15 @@ class TmdbMovieRepository(
                     .flatten()
                     .distinctBy { it.id }
             }
+            
+            lastFetched = Clock.System.now()
             emit(movies)
         }
+
+    override fun isTrendingMoviesStale(): Boolean {
+        // Checking if the elapsed time since lastFetched is greater than or equal to TTL
+        return (Clock.System.now() - lastFetched) >= TTL
+    }
 
     override fun getMovieDetails(movieId: MovieId): Flow<MovieDetails> = flow {
         val tmdbId = movieId.rawId.toIntOrNull()
